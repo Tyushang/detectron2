@@ -202,34 +202,66 @@ def setup(args):
     )  # if you don't like any of the default setup, write your own setup code
     return cfg
 
-CONFIG = None
 def main(args):
     cfg = setup(args)
     print(cfg)
-    global CONFIG
-    CONFIG = cfg
 
-    model = build_model(cfg)
-    logger.info("Model:\n{}".format(model))
-    if args.eval_only:
-        DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
-            cfg.MODEL.WEIGHTS, resume=args.resume
-        )
-        return do_test(cfg, model)
+    data_loader = build_detection_train_loader(cfg)
 
-    distributed = comm.get_world_size() > 1
-    if distributed:
-        model = DistributedDataParallel(
-            model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
-        )
+    # from data.build import get_detection_dataset_dicts
+    # dataset_dicts = get_detection_dataset_dicts(
+    #     cfg.DATASETS.TRAIN,
+    #     filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
+    #     min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
+    #     if cfg.MODEL.KEYPOINT_ON
+    #     else 0,
+    #     proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
+    # )
+    # from data import DatasetFromList
+    # dataset = DatasetFromList(dataset_dicts, copy=False)
 
-    do_train(cfg, model, resume=args.resume)
-    return do_test(cfg, model)
+
+    # model = build_model(cfg)
+    # logger.info("Model:\n{}".format(model))
+    # if args.eval_only:
+    #     DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
+    #         cfg.MODEL.WEIGHTS, resume=args.resume
+    #     )
+    #     return do_test(cfg, model)
+    #
+    # distributed = comm.get_world_size() > 1
+    # if distributed:
+    #     model = DistributedDataParallel(
+    #         model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
+    #     )
+    #
+    # do_train(cfg, model, resume=args.resume)
+    # return do_test(cfg, model)
 
 
 if __name__ == "__main__":
-    args = default_argument_parser().parse_args()
-    print("Command Line Args:", args)
+
+    import platform
+    RUN_ON = 'local' if platform.node() == 'frank-note' else 'google-cloud'
+
+    if RUN_ON == 'local':
+        PRJ_DIR = '/data/venv-pytorch/detectron2'
+    else:
+        PRJ_DIR = '~/jupyter/detectron2'
+
+    # cd tools/
+    # python ./plain_train_net2.py \
+    #   --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+    #   --num-gpus 1 SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
+    os.chdir(PRJ_DIR + '/tools')
+    CLI_ARGS = [
+        '--config-file', '../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml',
+        '--num-gpus', '1', 'SOLVER.IMS_PER_BATCH', '2', 'SOLVER.BASE_LR', '0.0025'
+    ]
+
+    args = default_argument_parser().parse_args(CLI_ARGS)
+
+    # print("Command Line Args:", args)
     launch(
         main,
         args.num_gpus,

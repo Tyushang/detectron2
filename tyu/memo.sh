@@ -2,22 +2,25 @@
 
 cd demo/
 python demo.py --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml \
-  --input input1.jpg input2.jpg \
+  --input ../tyu/sample_images/input1.jpg ../tyu/sample_images/input2.jpg \
   --opts MODEL.WEIGHTS detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl \
   MODEL.DEVICE cpu
 
 
-1: Create PyTorch VM
-2: python -m pip install 'git+https://github.com/facebookresearch/detectron2.git'
-3: Download model.pkl ?
-4: Run demo local? (To run on cpu, add MODEL.DEVICE cpu after --opts.)
-5: ./train_net.py --num-gpus 8 \
-
-
+# Create PyTorch VM
+# github 安装 detectron2
+python -m pip install 'https://github.com/Tyushang/detectron2@tyu'
+# 或者，先现在到本地，然后在本地 editable 安装
+git clone -b tyu https://github.com/Tyushang/detectron2
+python -m pip install -e detectron2
+# Download model.pkl ?
+# Run demo local? (To run on cpu, add MODEL.DEVICE cpu after --opts.)
+# prepare coco dataset. See: prepare_coo.sh
+# 试运行
 cd tools/
-./plain_train_net2.py --num-gpus 8 \
-  --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml
-
+python ./plain_train_net2.py \
+  --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_1x.yaml \
+  --num-gpus 1 SOLVER.IMS_PER_BATCH 2 SOLVER.BASE_LR 0.0025
 
 
 GeneralizedRCNN(
